@@ -1,0 +1,48 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Environment variables
+.env
+*.env
+
+# Initialize git
+git init
+
+# Create .gitignore
+cat > .gitignore << 'EOF'
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Environment variables
+.env
+*.env
+
+# Data files (optional - don't commit large datasets)
+data/raw/*.csv
+data/raw/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/*.log
+
+# R
+.Rhistory
+.RData

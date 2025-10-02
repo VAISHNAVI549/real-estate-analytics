@@ -1,0 +1,13 @@
+================================================================================
+REAL ESTATE ANALYTICS SUMMARY REPORT
+================================================================================
+Generated: 2025-10-02 14:56:37
+
+Total Listings in Database: 226,394
+Total Regions: 51
+Date Range: 2000-01-31 to 2025-08-31
+
+Latest Year (2025) Statistics:
+  Average Price: $339,531.37
+  Median Price: $322,210.90
+  Listings: 7,160
