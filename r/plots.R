@@ -1,5 +1,3 @@
-# Real Estate Analytics - R Visualization Script
-
 required_packages <- c("ggplot2", "dplyr", "tidyr", "RPostgreSQL", "scales", "viridis", "gridExtra")
 
 for (pkg in required_packages) {
@@ -176,6 +174,100 @@ if (nrow(df_yearly) > 0) {
   )
   
   cat("  Saved: 03_yearly_price_trend_line.png\n")
+}
+
+cat("Creating Chart 4: Regional Price Heatmap...\n")
+
+query_heatmap <- "
+SELECT 
+  region,
+  EXTRACT(YEAR FROM date) as year,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) as median_price
+FROM listings
+WHERE price IS NOT NULL AND date >= '2010-01-01'
+GROUP BY region, EXTRACT(YEAR FROM date)
+HAVING COUNT(*) >= 10
+ORDER BY region, year
+"
+
+df_heatmap <- dbGetQuery(con, query_heatmap)
+
+if (nrow(df_heatmap) > 0) {
+  p4 <- ggplot(df_heatmap, aes(x = year, y = region, fill = median_price)) +
+    geom_tile(color = "white", size = 1) +
+    scale_fill_viridis_c(option = "magma", labels = scales::dollar_format()) +
+    labs(
+      title = "Median Price Heatmap by State and Year",
+      subtitle = "Tracking Regional Price Evolution",
+      x = "Year",
+      y = "State",
+      fill = "Median Price"
+    ) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  ggsave(
+    filename = file.path(output_dir, "04_regional_heatmap.png"),
+    plot = p4,
+    width = 14,
+    height = 10,
+    dpi = 300
+  )
+  
+  cat("  Saved: 04_regional_heatmap.png\n")
+}
+
+cat("Creating Chart 5: State Growth Rates...\n")
+
+query_growth <- "
+WITH yearly_avg AS (
+  SELECT 
+    region,
+    EXTRACT(YEAR FROM date) as year,
+    AVG(price) as avg_price
+  FROM listings
+  WHERE price IS NOT NULL
+  GROUP BY region, EXTRACT(YEAR FROM date)
+)
+SELECT 
+  y1.region,
+  y1.year as latest_year,
+  ROUND(((y1.avg_price - y2.avg_price) / y2.avg_price * 100)::numeric, 2) as growth_rate
+FROM yearly_avg y1
+JOIN yearly_avg y2 ON y1.region = y2.region AND y1.year = y2.year + 5
+WHERE y1.year = (SELECT MAX(year) FROM yearly_avg)
+ORDER BY growth_rate DESC
+LIMIT 15
+"
+
+df_growth <- dbGetQuery(con, query_growth)
+
+if (nrow(df_growth) > 0) {
+  df_growth$color_flag <- ifelse(df_growth$growth_rate > 0, "positive", "negative")
+  
+  p5 <- ggplot(df_growth, aes(x = reorder(region, growth_rate), y = growth_rate, fill = color_flag)) +
+    geom_bar(stat = "identity", width = 0.7) +
+    coord_flip() +
+    scale_fill_manual(values = c("positive" = "#2ecc71", "negative" = "#e74c3c")) +
+    geom_text(aes(label = paste0(growth_rate, "%")), hjust = -0.2, size = 4) +
+    labs(
+      title = "5-Year Price Growth by State",
+      subtitle = "Top 15 States by Growth Rate",
+      x = "State",
+      y = "Growth Rate (%)"
+    ) +
+    theme(legend.position = "none")
+  
+  ggsave(
+    filename = file.path(output_dir, "05_growth_rates.png"),
+    plot = p5,
+    width = 12,
+    height = 8,
+    dpi = 300
+  )
+  
+  cat("  Saved: 05_growth_rates.png\n")
 }
 
 dbDisconnect(con)
